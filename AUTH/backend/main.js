@@ -8,13 +8,15 @@ import auth from './middleware/auth.js';
 import authorize from "./middleware/authorize.js";
 const { sign, verify } = pkg;
 import dotenv from 'dotenv';
+import problemsRouter from './routes/problems.js';
 dotenv.config();
 
 DBConnection();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.json());
+app.use('/api',problemsRouter); //Mount the router under the '/api' base path
 
 //always make a "/" route and get route its god for production
 app.get("/", (req, res) => { //http method 'get' "/" is the request and response is hello world
