@@ -4,7 +4,7 @@ const authorize = (requiredRoles)=> {
         if(!req.user || !req.user.role){
             //this senariio should ideally be caught by 'auth' middleware first,
             //but its good defensive check.
-            return re.status(401).json({message: 'Authentication required or role missing.'});
+            return res.status(401).json({message: 'Authentication required or role missing.'});
         }
         const userRole=req.user.role;
 

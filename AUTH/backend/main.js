@@ -8,15 +8,19 @@ import auth from './middleware/auth.js';
 import authorize from "./middleware/authorize.js";
 const { sign, verify } = pkg;
 import dotenv from 'dotenv';
+import cors from 'cors';
 import problemsRouter from './routes/problems.js';
 dotenv.config();
 
 DBConnection();
 
-app.use(express.json());
+
+
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', problemsRouter); //Mount the router under the '/api' base path
+app.use(cors());
 app.use(express.json());
-app.use('/api',problemsRouter); //Mount the router under the '/api' base path
+
 
 //always make a "/" route and get route its god for production
 app.get("/", (req, res) => { //http method 'get' "/" is the request and response is hello world
@@ -42,7 +46,7 @@ app.post("/register", async (req, res) => {
         //add more validations -TODO
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).send("User with same email already exists");
+            return res.status(409).send("User with same email already exists");
         }
 
         //hashing/encrypt the password
@@ -77,8 +81,16 @@ app.post("/register", async (req, res) => {
             }
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error during registration." });
+        if (error.code === 11000) {
+            // Check if the error is a duplicate key error
+            // The error message from MongoDB will tell you which field caused the issue.
+            const field = Object.keys(error.keyValue)[0];
+            const message = `A user with that ${field} already exists.`;
+            return res.status(409).json({ message });
+        }
+        // For all other errors, send a generic internal server error.
+        console.error(error); // Log the full error for debugging
+        res.status(500).json({ message: " Internal server error during registration." });
     }
 });
 
@@ -87,7 +99,7 @@ app.post("/login", async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).send("Please enter both email and password.");
+            return res.status(400).json("Please enter both email and password.");
         }
 
         const existingUser = await User.findOne({ email });

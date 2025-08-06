@@ -46,3 +46,11 @@ yarn-debug.log*
 
 # Vite-specific files
 .vite/
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Frontend build output
+frontend/dist/

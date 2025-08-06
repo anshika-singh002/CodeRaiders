@@ -28,11 +28,13 @@ const Register = () => {
                 formData.phoneno
                 
             );
+            console.log("Registration successful!");
             alert("Registration successful! You can now log in.");
             navigate('/login');
         }catch(error){
             console.error("Registration failed:", error.response?.data || error.message);
-            alert("Registration failed:" + (error.response?.data || "Server error"));
+            const errorMessage = error.response?.data?.message || "Something went wrong. Please try again.";
+            alert("Registration failed:" + errorMessage);
         }
     };
 

@@ -4,9 +4,9 @@ import dotenv from 'dotenv';
 dotenv.config(); //this is called because we depend on .env for secret key
 
 const auth = (req, res, next)=>{
-    //get token from header( usually "bearer token ")
+    //get token from header( usually "bearer token ") The space after 'Bearer' is crucial.
 
-    const token = req.header('Authorization')?.replace('Bearer','');
+    const token = req.header('Authorization')?.replace('Bearer ','');
 
     if(!token){
         return res.status(401).json({ message: 'No token, authorization denied'});
@@ -22,7 +22,7 @@ const auth = (req, res, next)=>{
     } catch(err){
         //log the error for debugging purposes (optional in production, user a logger)
         console.error('Token verification failed:',err);
-        res.status(401),json({message: 'Token is not valid'});
+        res.status(401).json({message: 'Token is not valid'});
     }
 };
 
