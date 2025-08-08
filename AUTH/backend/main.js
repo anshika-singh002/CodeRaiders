@@ -17,7 +17,7 @@ DBConnection();
 
 
 app.use(express.urlencoded({ extended: true }));
-app.use('/api', problemsRouter); //Mount the router under the '/api' base path
+app.use('/api/problems', problemsRouter); //Mount the router under the '/api' base path
 app.use(cors());
 app.use(express.json());
 
