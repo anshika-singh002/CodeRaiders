@@ -9,6 +9,7 @@ import CreateProblem from './components/CreateProblem';
 import EditProblem from './components/EditProblem';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import './App.css';
 
 
@@ -19,10 +20,16 @@ function App() {
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Wrapping all protected routes inside the ProtectedRoute component */}
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/problems/new" element={<CreateProblem />} />
+          <Route path="/problems/edit/:id" element={<EditProblem />} />
+        </Route>
+         {/*public route for the problems list */}
         <Route path="/problems" element={<ProblemList />} />
-        <Route path="/problems/new" element={<CreateProblem />} />
-        <Route path="/problems/edit" element={<ProblemList />} />
       </Routes>
     </BrowserRouter>
   );
