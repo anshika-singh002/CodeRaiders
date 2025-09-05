@@ -1,0 +1,48 @@
+/* Custom CSS for the logo and terminal icon */
+.logo-5 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.terminal {
+    width: 40px;
+    height: 32px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    position: relative;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.terminal::before {
+    content: '>';
+    position: absolute;
+    color: #00ff88;
+    font-size: 14px;
+    top: 50%;
+    left: 6px;
+    transform: translateY(-50%);
+    text-shadow: 0 0 10px #00ff88;
+}
+
+.terminal::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: #00ff88;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    animation: blink 1s infinite;
+    box-shadow: 0 0 5px #00ff88;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}

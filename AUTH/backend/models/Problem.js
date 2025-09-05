@@ -15,14 +15,22 @@ const problemSchema= new mongoose.Schema({
         enum:['Easy','Medium','Hard'],
         default:'Easy'
     },
+    tags: {
+        type: [String],
+        default: []
+    },
     testCases:[{
-        input:{type:String,required:true},
+        input:{type:String, required:true},
         output:{type:String,required:true}
     }],
     author:{
         type: mongoose.Schema.Types.ObjectId,
         ref:'User', //creates a reationship to user model
         required: true
+    },
+     acceptanceRate: {
+        type: Number,
+        default: 0
     },
     createdAt: {
         type:Date,

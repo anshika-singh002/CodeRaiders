@@ -8,14 +8,25 @@ const router = express.Router();
 // Path changed from '/problems' to '/'
 router.post('/', auth, async (req, res) => {
     try {
+        const { title, description, difficulty, testCases } = req.body;
+
+        // 👈 Added: Check if testCases exist and are not empty
+        if (!testCases || testCases.length === 0) {
+            return res.status(400).json({ message: "Problems must have at least one test case." });
+        }
+
+
         const problem = new Problem({
-            ...req.body,
-            // CORRECTED: Access req.user.id
-            author: req.user.id // Get the user id from the authenticated token
+            title,
+            description,
+            difficulty,
+            testCases,
+            author: req.user.id
         });
+
         // CORRECTED: Call save() on the 'problem' instance, not the 'Problem' model
         await problem.save();
-        res.status(201).send(problem);
+        res.status(201).json(problem);
     } catch (error) {
         // It's good practice to send a JSON response for errors
         console.error("Error creating problem:", error);
@@ -28,7 +39,7 @@ router.post('/', auth, async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const problems = await Problem.find({});
-        res.status(200).send(problems);
+        res.status(200).json(problems);
     } catch (error) {
         console.error("Error fetching problems:", error);
         res.status(500).json({ message: "Internal server error fetching problems." });
@@ -43,7 +54,7 @@ router.get('/:id', async (req, res) => {
         if (!problem) {
             return res.status(404).json({ message: "Problem not found." });
         }
-        res.status(200).send(problem);
+        res.status(200).json(problem);
     } catch (error) {
         console.error("Error fetching single problem:", error);
         res.status(500).json({ message: "Internal server error fetching problem." });
@@ -54,16 +65,23 @@ router.get('/:id', async (req, res) => {
 // Path changed from '/problems/:id' to '/:id'
 router.put('/:id', auth, async (req, res) => {
     try {
+        const { title, description, difficulty, testCases } = req.body;
+
+        // 👈 Added: Check if testCases exist and are not empty on update
+        if (!testCases || testCases.length === 0) {
+            return res.status(400).json({ message: "Problems must have at least one test case." });
+        }
+
         const problem = await Problem.findOneAndUpdate(
-            { _id: req.params.id, author: req.user.id }, // find by ID and author
-            req.body,
-            { new: true, runValidators: true } // return the updated document and run validation
+            { _id: req.params.id, author: req.user.id },
+            { title, description, difficulty, testCases }, // 👈 Explicitly passing the updated fields
+            { new: true, runValidators: true }
         );
+
         if (!problem) {
-            // This could mean problem not found OR user is not the author
             return res.status(404).json({ message: "Problem not found or you are not authorized to update it." });
         }
-        res.status(200).send(problem);
+        res.status(200).json(problem);
     } catch (error) {
         console.error("Error updating problem:", error);
         res.status(400).json({ message: "Failed to update problem.", error: error.message });

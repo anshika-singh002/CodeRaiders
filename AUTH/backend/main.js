@@ -6,30 +6,37 @@ import pkg from 'jsonwebtoken';
 import User from './models/User.js';
 import auth from './middleware/auth.js';
 import authorize from "./middleware/authorize.js";
+import usersRouter from './routes/users.js'; 
 const { sign, verify } = pkg;
 import dotenv from 'dotenv';
 import cors from 'cors';
 import problemsRouter from './routes/problems.js';
-dotenv.config();
+import submissionsRouter from './routes/submissions.js';
 
+
+dotenv.config();
 DBConnection();
 
 
 
-app.use(express.urlencoded({ extended: true }));
-app.use('/api/problems', problemsRouter); //Mount the router under the '/api' base path
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+
+app.use('/api/problems', problemsRouter); //Mount the router under the '/api' base path
+app.use('/api/submissions', submissionsRouter);
+app.use('/api/users', usersRouter);
+
 
 
 //always make a "/" route and get route its god for production
+// All of your app.get() and app.post() routes come AFTER the middleware
 app.get("/", (req, res) => { //http method 'get' "/" is the request and response is hello world
     res.send("Hello, world!, is coming from backend from main.js! ");
 });
 
-// app.get("/register", (req,res)=>{ //http method 'get' "/" is the request and response is hello world
-//     res.send("<h1>register page!</h1>");
-// });
 
 
 app.post("/register", async (req, res) => {
@@ -40,13 +47,13 @@ app.post("/register", async (req, res) => {
         //check that all the data should exist
 
         if (!(firstname && lastname && email && password && phoneno)) {
-            return res.status(404).send("Please enter all the information");
+            return res.status(404).json("Please enter all the information");
         }
         //check if the user already exists
         //add more validations -TODO
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(409).send("User with same email already exists");
+            return res.status(409).json("User with same email already exists");
         }
 
         //hashing/encrypt the password
@@ -89,17 +96,18 @@ app.post("/register", async (req, res) => {
             return res.status(409).json({ message });
         }
         // For all other errors, send a generic internal server error.
-        console.error(error); // Log the full error for debugging
+        console.error("Registration error:", error); // Log the full error for debugging
         res.status(500).json({ message: " Internal server error during registration." });
     }
 });
 
+// Login route
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json("Please enter both email and password.");
+            return res.status(400).json({ message: "Please enter both email and password." });
         }
 
         const existingUser = await User.findOne({ email });
@@ -116,7 +124,7 @@ app.post("/login", async (req, res) => {
         const token = sign(
             { id: existingUser._id, email: existingUser.email },//ERROR POTENTIAL
             process.env.SECRET_KEY, //ensuring this env variable is set
-            { expiresIn: '2h' } // token expires in 2 hrs
+            { expiresIn: '24h' } // token expires in 2 hrs
         );
 
         existingUser.password = undefined; //not sending the password hashback
@@ -133,8 +141,9 @@ app.post("/login", async (req, res) => {
             }
         });
 
-    } catch (error) {
-        console.error("Login error:", error); //logging the detiled error on server sidde
+    }
+    catch (error) {
+        console.error("Login error:", error);
         res.status(500).json({ message: "Internal server error. Please try again later." });
     }
 });
@@ -164,6 +173,11 @@ app.get("/admin/users", auth, authorize(['admin']), async (req, res) => {
     }
 
 });
+
+
+
+
+
 
 
 app.listen(process.env.PORT || 4000, () => { //adding default port 4000
