@@ -20,7 +20,8 @@ const languageMap = {
 router.get('/', auth, async (req, res) => {
     try {
         const submissions = await Submission.find({ userId: req.user.id })
-            .populate('problemId', 'title difficulty');
+            .populate('problemId', 'title difficulty')
+             .sort({ createdAt: -1 });
         res.status(200).json(submissions);
     } catch (error) {
         console.error('Error fetching submissions:', error);

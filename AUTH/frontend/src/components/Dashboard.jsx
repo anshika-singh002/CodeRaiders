@@ -1,8 +1,24 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Dashboard.css'; // Import the new CSS file
-
+import useAxiosPrivate from '../hooks/useAxiosPrivate';
 const Dashboard = () => {
+    const apiPrivate = useAxiosPrivate(); // 👈 Get the special Axios instance
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                // Use the private instance for your API call 🚀
+                const response = await apiPrivate.get('/dashboard');
+                console.log(response.data);
+            } catch (error) {
+                console.error("Could not fetch dashboard data", error);
+            }
+        };
+
+        fetchUserData();
+    }, [apiPrivate]);
     return (
         <div className="relative w-screen h-screen overflow-hidden bg-gray-900">
             {/* Galaxy theme gradient background */}
@@ -58,7 +74,7 @@ const Dashboard = () => {
                         <p className="text-white/80 text-lg leading-relaxed">
                             This is a protected page after successful login.
                         </p>
-{/* Additional dashboard content */}
+                        {/* Additional dashboard content */}
                         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Correct Link usage: Link wraps the clickable div */}
                             <Link to="/userprofile" className="block bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">

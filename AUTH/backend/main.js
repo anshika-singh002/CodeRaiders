@@ -6,20 +6,25 @@ import pkg from 'jsonwebtoken';
 import User from './models/User.js';
 import auth from './middleware/auth.js';
 import authorize from "./middleware/authorize.js";
-import usersRouter from './routes/users.js'; 
+import usersRouter from './routes/users.js';
 const { sign, verify } = pkg;
 import dotenv from 'dotenv';
 import cors from 'cors';
 import problemsRouter from './routes/problems.js';
 import submissionsRouter from './routes/submissions.js';
-
+import cookieParser from 'cookie-parser';
+import executeRouter from './routes/execute.js';
 
 dotenv.config();
 DBConnection();
 
 
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Must match your frontend's address
+    credentials: true                  // This is essential for cookies
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/problems', problemsRouter); //Mount the router under the '/api' base path
 app.use('/api/submissions', submissionsRouter);
 app.use('/api/users', usersRouter);
-
+app.use('/api/execute', executeRouter); 
 
 
 //always make a "/" route and get route its god for production
@@ -69,24 +74,41 @@ app.post("/register", async (req, res) => {
             role: 'user' //Assignin default role
         });
         //generate a token for user and send it to the backend
-        const token = sign(
-            { id: newUser._id, email },
-            process.env.SECRET_KEY,
-            { expiresIn: '1h' }
+        // 1. Create Access Token (short-lived)
+        const accessToken = sign(
+            { id: newUser._id, email: newUser.email, role: newUser.role },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: process.env.ACCESS_TOKEN_EXPIRATION }
         );
-        newUser.token = token;
-        newUser.password = undefined; //notseding pasword hashback
 
+        // 2. Create Refresh Token (long-lived)
+        const refreshToken = sign(
+            { id: newUser._id }, // Keep payload minimal
+            process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: process.env.REFRESH_TOKEN_EXPIRATION }
+        );
+
+        // 3. Send the Refresh Token as a secure, httpOnly cookie
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // 4. Send the Access Token and user info in the JSON response
+        newUser.password = undefined; // Don't send the password hash
         res.status(201).json({ // Use 201 for resource creation
             message: 'You are successfully registered',
-            token: token,
+            accessToken: accessToken, // Send the access token
             user: {
                 id: newUser._id,
                 firstname: newUser.firstname,
                 email: newUser.email,
-                role: newUser.role // Send the role back
+                role: newUser.role
             }
         });
+
     } catch (error) {
         if (error.code === 11000) {
             // Check if the error is a duplicate key error
@@ -110,32 +132,49 @@ app.post("/login", async (req, res) => {
             return res.status(400).json({ message: "Please enter both email and password." });
         }
 
-        const existingUser = await User.findOne({ email });
-
+        const existingUser = await User.findOne({ email }).select('+password');
+        console.log('User found:', existingUser); 
         //its better todo a combined check for userexistence and password match from generic error message
 
         if (!existingUser || !(await bcrypt.compare(password, existingUser.password))) {
             return res.status(401).json({ message: "Invalid email or password." });
         }
-
+21  
 
 
         //generate jwt token on suxxessful login 
-        const token = sign(
-            { id: existingUser._id, email: existingUser.email },//ERROR POTENTIAL
-            process.env.SECRET_KEY, //ensuring this env variable is set
-            { expiresIn: '24h' } // token expires in 2 hrs
+        // ... inside your /login route, after finding the user
+
+        // 1. Create Access Token (short-lived) using the new environment variable
+        const accessToken = sign(
+            { id: existingUser._id, email: existingUser.email, role: existingUser.role },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: process.env.ACCESS_TOKEN_EXPIRATION }
         );
 
-        existingUser.password = undefined; //not sending the password hashback
-        // Successful login – redirect or show dashboard
+        // 2. Create Refresh Token (long-lived)
+        const refreshToken = sign(
+            { id: existingUser._id }, // Keep payload minimal for refresh token
+            process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: process.env.REFRESH_TOKEN_EXPIRATION }
+        );
+
+        // 3. Send the Refresh Token as a secure, httpOnly cookie
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true, // Prevents client-side JS from accessing the cookie
+            secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+            sameSite: 'strict', // Helps prevent CSRF attacks
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+        });
+
+        // 4. Send the Access Token and user info in the JSON response
+        existingUser.password = undefined; // Don't send the password hash
         res.status(200).json({
             messae: "Login successful!",
-            token: token,
-            user: { // send some user details back (excluding sesitive info)}
+            accessToken: accessToken, // Send the access token
+            user: {
                 id: existingUser._id,
                 firstname: existingUser.firstname,
-                lastname: existingUser.lastname,
                 email: existingUser.email,
                 role: existingUser.role
             }
@@ -147,6 +186,48 @@ app.post("/login", async (req, res) => {
         res.status(500).json({ message: "Internal server error. Please try again later." });
     }
 });
+// REFRESH TOKEN ROUTE
+// ✅ REPLACE your old /refresh-token route with this one
+
+// REFRESH TOKEN ROUTE
+// ... inside main.js
+
+// REFRESH TOKEN ROUTE
+app.post("/refresh-token", async (req, res) => { // 👈 Make the function async
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: "No refresh token, authorization denied." });
+    }
+
+    try {
+        // Verify the refresh token to get the user's ID
+        const decoded = verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        // 👇 THIS IS THE CRITICAL FIX: Look up the user in the database
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return res.status(403).json({ message: "User not found." });
+        }
+
+        // Create a new, COMPLETE access token with the full user payload
+        const newAccessToken = sign(
+            { id: user._id, email: user.email, role: user.role },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: process.env.ACCESS_TOKEN_EXPIRATION }
+        );
+
+        res.json({ accessToken: newAccessToken });
+
+    } catch (err) {
+        // This will catch errors from verify() or other issues
+        console.error("Refresh token error:", err);
+        return res.status(403).json({ message: "Invalid Refresh Token." });
+    }
+});
+
+// ... rest of your main.js file
+
 
 // If we reach here, the user is authenticated, and req.user contains their id and email
 app.get("/dashboard", auth, (req, res) => {

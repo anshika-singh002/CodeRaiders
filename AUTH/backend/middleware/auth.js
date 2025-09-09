@@ -1,29 +1,33 @@
 import pkg from 'jsonwebtoken';
-const {verify} = pkg;
+const { verify } = pkg;
 import dotenv from 'dotenv';
-dotenv.config(); //this is called because we depend on .env for secret key
+dotenv.config();
 
-const auth = (req, res, next)=>{
-    //get token from header( usually "bearer token ") The space after 'Bearer' is crucial.
+const auth = (req, res, next) => {
+    console.log(`\n--- AUTH MIDDLEWARE CHECK for ${req.method} ${req.path} ---`);
+    const authHeader = req.header('Authorization');
 
-    const token = req.header('Authorization')?.replace('Bearer ','');
-
-    if(!token){
-        return res.status(401).json({ message: 'No token, authorization denied'});
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('❌ Auth failed: Header is missing or doesn\'t start with "Bearer ".');
+        return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    try{
-        //verify token 
-        const decoded =verify(token, process.env.SECRET_KEY);
+    const token = authHeader.split(' ')[1];
+    console.log('Received Token:', token.substring(0, 20) + '...'); // Log first 20 chars
 
-        //Attach user information from the token payload to the required object
+    try {
+        console.log('Verifying with Secret:', process.env.ACCESS_TOKEN_SECRET ? `"${process.env.ACCESS_TOKEN_SECRET.substring(0, 10)}..."` : '!!! SECRET IS UNDEFINED !!!');
+        
+        const decoded = verify(token, process.env.ACCESS_TOKEN_SECRET);
+        console.log('✅ Token verified successfully. Payload:', decoded);
         req.user = decoded;
-        next(); //call next middleware/route handler
-    } catch(err){
-        //log the error for debugging purposes (optional in production, user a logger)
-        console.error('Token verification failed:',err);
-        res.status(401).json({message: 'Token is not valid'});
+        next();
+    } catch (err) {
+        // THIS IS THE MOST IMPORTANT LOG
+        console.error('❌ TOKEN VERIFICATION FAILED:', err.message); 
+        res.status(401).json({ message: 'Token is not valid' });
     }
 };
 
 export default auth;
+

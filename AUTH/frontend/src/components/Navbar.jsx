@@ -23,7 +23,7 @@ const Navbar = () => {
                     {/* Navigation Links */}
                     <div className="hidden md:flex items-center space-x-8">
                         <Link to="/userprofile" className="text-white/80 hover:text-white transition-colors duration-300">Profile</Link>
-                        <Link to="/problemlist" className="text-white hover:text-white font-medium">Problems</Link>
+                        <Link to="/problems" className="text-white hover:text-white font-medium">Problems</Link>
                         <Link to="/submissions" className="text-white/80 hover:text-white transition-colors duration-300">Submissions</Link>
                         <Link to="/contests" className="text-white/80 hover:text-white transition-colors duration-300">Contests</Link>
                     </div>

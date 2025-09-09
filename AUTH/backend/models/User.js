@@ -19,6 +19,7 @@ email:{
 password:{
     type:String,
     required:true,
+    select: false,
 },
 phoneno:{
     type:String,

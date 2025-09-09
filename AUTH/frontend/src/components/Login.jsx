@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+// import authService from '../services/authService'; // 👈 1. You no longer need this here
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+    const { login } = useAuth(); // 👈 You are already getting the login function correctly
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
@@ -10,24 +12,27 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await authService.login(email, password);
+            // 👇 2. Replace the authService call with the login function from context
+            await login(email, password);
+
             alert("login successful!");
-            console.log("Logged in user data:", response.user);
             navigate('/dashboard');
 
         } catch (error) {
+            // The context's login function will throw an error if the API call fails
             console.error("Login failed: ", error.response?.data || error.message);
-            alert("Login failed: " + (error.response?.data || "Invalid credentials"));
+            alert("Login failed: " + (error.response?.data?.message || "Invalid credentials"));
         }
     };
 
     return (
-        <div className="flex items-center justify-center p-4 relative overflow-hidden" style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', margin: 0, padding: '1rem'}}>
+        // ... your beautiful JSX remains exactly the same
+        <div className="flex items-center justify-center p-4 relative overflow-hidden" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', margin: 0, padding: '1rem' }}>
             {/* Galaxy theme gradient background */}
-            <div className="absolute" style={{top: 0, left: 0, width: '100vw', height: '100vh', background: 'linear-gradient(135deg, #0a0a0a, #1a0b2e, #16213e, #0f3460, #533a7d, #8b5a8c, #b06ab3, #d084c7)'}}></div>
+            <div className="absolute" style={{ top: 0, left: 0, width: '100vw', height: '100vh', background: 'linear-gradient(135deg, #0a0a0a, #1a0b2e, #16213e, #0f3460, #533a7d, #8b5a8c, #b06ab3, #d084c7)' }}></div>
 
             {/* Additional galaxy overlay with stars effect */}
-            <div className="absolute" style={{top: 0, left: 0, width: '100vw', height: '100vh', background: 'radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.15), transparent 50%), radial-gradient(ellipse at 40% 40%, rgba(120, 119, 255, 0.1), transparent 50%)'}}></div>
+            <div className="absolute" style={{ top: 0, left: 0, width: '100vw', height: '100vh', background: 'radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.15), transparent 50%), radial-gradient(ellipse at 40% 40%, rgba(120, 119, 255, 0.1), transparent 50%)' }}></div>
 
             {/* Blurred glassmorphism container */}
             <div className="relative z-10 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 w-full max-w-md">
@@ -53,12 +58,12 @@ const Login = () => {
                         Login
                     </button>
                 </form>
-                
+
                 {/* Sign up link */}
                 <div className="mt-8 text-center">
                     <p className="text-white/70 text-sm">
                         Don't have an account?{' '}
-                        <span 
+                        <span
                             onClick={() => navigate('/register')}
                             className="text-blue-300 hover:text-blue-200 font-medium transition-colors duration-300 hover:underline cursor-pointer"
                         >

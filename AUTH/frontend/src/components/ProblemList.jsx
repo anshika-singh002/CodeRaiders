@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import ProblemService from '../services/ProblemService';
-import { Search, Plus, Edit, Trash2, Code, Clock, Users, Filter } from 'lucide-react';
+import useAxiosPrivate from '../hooks/useAxiosPrivate';
+import { useAuth } from '../context/AuthContext';
+import { Search, Plus, Edit, Trash2, Code, Clock, Users, Filter, ServerCrash } from 'lucide-react';
 
 const ProblemList = () => {
     const [problems, setProblems] = useState([]);
@@ -12,14 +13,14 @@ const ProblemList = () => {
     const [difficultyFilter, setDifficultyFilter] = useState('All');
     const [sortBy, setSortBy] = useState('newest');
 
-    // 👈 CORRECT: Variable declarations must be outside the return statement.
-    const user = JSON.parse(localStorage.getItem('user'));
+    const apiPrivate = useAxiosPrivate();
+    const { auth } = useAuth();
 
     useEffect(() => {
         const fetchProblems = async () => {
             try {
                 setLoading(true);
-                const response = await ProblemService.getAllProblems();
+                const response = await apiPrivate.get('/api/problems');
                 setProblems(response.data);
             } catch (err) {
                 setError('Failed to fetch problems. Please try again.');
@@ -29,7 +30,7 @@ const ProblemList = () => {
             }
         };
         fetchProblems();
-    }, []);
+    }, [apiPrivate]);
 
     useEffect(() => {
         let filtered = problems.filter(problem => {
@@ -42,25 +43,22 @@ const ProblemList = () => {
 
         filtered.sort((a, b) => {
             switch (sortBy) {
-                case 'title':
-                    return a.title.localeCompare(b.title);
+                case 'title': return a.title.localeCompare(b.title);
                 case 'difficulty':
-                    const difficultyOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
-                    return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
-                case 'acceptance':
-                    return b.acceptanceRate - a.acceptanceRate;
+                    const order = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
+                    return order[a.difficulty] - order[b.difficulty];
+                case 'acceptance': return (b.acceptanceRate || 0) - (a.acceptanceRate || 0);
                 case 'newest':
-                default:
-                    return new Date(b.createdAt) - new Date(a.createdAt);
+                default: return new Date(b.createdAt) - new Date(a.createdAt);
             }
         });
         setFilteredProblems(filtered);
     }, [problems, searchTerm, difficultyFilter, sortBy]);
 
     const handleDelete = async (id, title) => {
-        if (window.confirm(`Are you sure you want to delete the problem "${title}"?`)) {
+        if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
             try {
-                await ProblemService.deleteProblem(id);
+                await apiPrivate.delete(`/api/problems/${id}`);
                 setProblems(problems.filter(problem => problem._id !== id));
             } catch (err) {
                 setError('Failed to delete problem: ' + (err.response?.data?.message || err.message));
@@ -71,14 +69,10 @@ const ProblemList = () => {
 
     const getDifficultyColor = (difficulty) => {
         switch (difficulty) {
-            case 'Easy':
-                return 'text-green-400 bg-green-900/20 border-green-400/30';
-            case 'Medium':
-                return 'text-yellow-400 bg-yellow-900/20 border-yellow-400/30';
-            case 'Hard':
-                return 'text-red-400 bg-red-900/20 border-red-400/30';
-            default:
-                return 'text-gray-400 bg-gray-900/20 border-gray-400/30';
+            case 'Easy': return 'text-green-400 bg-green-900/20 border-green-400/30';
+            case 'Medium': return 'text-yellow-400 bg-yellow-900/20 border-yellow-400/30';
+            case 'Hard': return 'text-red-400 bg-red-900/20 border-red-400/30';
+            default: return 'text-gray-400 bg-gray-900/20 border-gray-400/30';
         }
     };
 
@@ -106,7 +100,7 @@ const ProblemList = () => {
                 <div className="bg-slate-800 rounded-lg p-8 max-w-md w-full">
                     <div className="text-center">
                         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Trash2 className="w-8 h-8 text-red-400" />
+                            <ServerCrash className="w-8 h-8 text-red-400" />
                         </div>
                         <p className="text-red-400 text-lg font-medium">{error}</p>
                     </div>
@@ -118,7 +112,6 @@ const ProblemList = () => {
     return (
         <div className="min-h-screen bg-slate-900 p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="bg-slate-800 rounded-xl shadow-2xl overflow-hidden mb-6">
                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 sm:px-6 py-6 sm:py-8">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -129,7 +122,7 @@ const ProblemList = () => {
                                 </h1>
                                 <p className="text-indigo-100 mt-1 sm:mt-2">Master your coding skills with challenging problems</p>
                             </div>
-                            {user && user.role === 'admin' && (
+                            {auth.user && auth.user.role === 'admin' && (
                                 <Link to="/problems/new" className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center gap-2 backdrop-blur-sm border border-white/20">
                                     <Plus className="w-5 h-5" />
                                     Create Problem
@@ -138,10 +131,8 @@ const ProblemList = () => {
                         </div>
                     </div>
 
-                    {/* Filters and Search */}
-                    <div className="p-4 sm:p-6 bg-slate-750 border-b border-slate-700">
+                    <div className="p-4 sm:p-6 bg-slate-700 border-b border-slate-700">
                         <div className="flex flex-col lg:flex-row gap-4">
-                            {/* Search */}
                             <div className="flex-1 relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                                 <input
@@ -153,7 +144,6 @@ const ProblemList = () => {
                                 />
                             </div>
 
-                            {/* Filters */}
                             <div className="flex gap-3">
                                 <div className="relative">
                                     <select
@@ -184,14 +174,12 @@ const ProblemList = () => {
                     </div>
                 </div>
 
-                {/* Results Summary */}
                 <div className="mb-6 flex items-center justify-between">
                     <p className="text-slate-400">
                         Showing {filteredProblems.length} of {problems.length} problems
                     </p>
                 </div>
 
-                {/* Problems List */}
                 {filteredProblems.length > 0 ? (
                     <div className="space-y-4">
                         {filteredProblems.map((problem) => (
@@ -201,9 +189,7 @@ const ProblemList = () => {
                             >
                                 <div className="p-6">
                                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        {/* Problem Info */}
                                         <div className="flex-1 min-w-0">
-                                            {/* Link wraps title and difficutly */}
                                             <div className="flex items-center gap-3 mb-2">
                                                 <Link to={`/problems/${problem._id}`} className="flex items-center gap-3">
                                                     <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors">
@@ -217,8 +203,6 @@ const ProblemList = () => {
                                             <p className="text-slate-400 text-sm mb-3 line-clamp-2">
                                                 {problem.description}
                                             </p>
-
-                                            {/* Tags */}
                                             <div className="flex flex-wrap gap-2 mb-4">
                                                 {problem.tags && problem.tags.map((tag, index) => (
                                                     <span
@@ -229,8 +213,6 @@ const ProblemList = () => {
                                                     </span>
                                                 ))}
                                             </div>
-
-                                            {/* Stats */}
                                             <div className="flex items-center gap-6 text-xs text-slate-500">
                                                 <div className="flex items-center gap-1">
                                                     <Users className="w-4 h-4" />
@@ -238,19 +220,18 @@ const ProblemList = () => {
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{problem.acceptanceRate}% acceptance</span>
+                                                    <span>{problem.acceptanceRate || 0}% acceptance</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Action Buttons */}
                                         <div className="flex items-center gap-2">
                                             <Link to={`/problems/${problem._id}/submit`}>
                                                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium">
                                                     Solve
                                                 </button>
                                             </Link>
-                                            {user && user.role === 'admin' && (
+                                            {auth.user && auth.user.role === 'admin' && (
                                                 <>
                                                     <Link to={`/problems/edit/${problem._id}`}>
                                                         <button className="bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-lg transition-colors duration-200">
@@ -280,7 +261,7 @@ const ProblemList = () => {
                                 ? "Try adjusting your search criteria or filters."
                                 : "Get started by creating your first problem!"}
                         </p>
-                        {user && user.role === 'admin' && (
+                        {auth.user && auth.user.role === 'admin' && (
                             <Link to="/problems/new" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto w-fit">
                                 <Plus className="w-5 h-5" />
                                 Create First Problem
@@ -293,3 +274,4 @@ const ProblemList = () => {
     );
 };
 export default ProblemList;
+

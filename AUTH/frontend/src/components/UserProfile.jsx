@@ -1,26 +1,20 @@
-// frontend/src/components/UserProfile.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { User, Mail, Shield, Phone, Loader2 } from 'lucide-react';
+import useAxiosPrivate from '../hooks/useAxiosPrivate'; // Correct hook for private API calls
 
 const UserProfile = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const apiPrivate = useAxiosPrivate(); // Get the configured Axios instance
 
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const loggedInUser = JSON.parse(localStorage.getItem('user'));
-                if (!loggedInUser?.token) {
-                    setError('You must be logged in to view your profile.');
-                    setLoading(false);
-                    return;
-                }
-
-                const response = await axios.get('/api/users/profile', {
-                    headers: { 'Authorization': `Bearer ${loggedInUser.token}` }
-                });
+                // Use 'apiPrivate' to make the API call.
+                // This automatically uses the correct baseURL (http://localhost:4000)
+                // and attaches the Authorization header.
+                const response = await apiPrivate.get('/api/users/profile');
                 setUser(response.data);
             } catch (err) {
                 console.error('Error fetching user profile:', err);
@@ -31,7 +25,7 @@ const UserProfile = () => {
         };
 
         fetchUserProfile();
-    }, []);
+    }, [apiPrivate]); // Dependency array ensures this runs once
 
     if (loading) {
         return (
@@ -50,7 +44,7 @@ const UserProfile = () => {
             </div>
         );
     }
-    
+
     if (!user) {
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -98,3 +92,4 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+
