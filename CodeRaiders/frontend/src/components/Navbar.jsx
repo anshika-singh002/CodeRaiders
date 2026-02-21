@@ -9,36 +9,44 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
-            <div className="max-w-7xl mx-auto px-6 py-4">
-                <div className="flex items-center justify-between">
+        <nav className="sticky top-0 z-50 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-md border-b border-white/5 shadow-lg">
+            <div className="w-full px-4 md:px-6 py-2.5">
+                <div className="flex items-center justify-start md:justify-between gap-4">
                     {/* Logo - now a clickable link */}
-                    <Link to="/dashboard" className="logo-card cursor-pointer">
-                        <div className="logo-5">
-                            <div className="terminal"></div>
-                            <span className="brand-text text-xl font-bold text-white">Code Raiders</span>
+                    <Link to="/dashboard" className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-bold text-base">⚡</span>
+                            </div>
+                            <span className="text-base font-bold text-white hidden sm:inline whitespace-nowrap">Code Raiders</span>
                         </div>
                     </Link>
 
-                    {/* Navigation Links */}
-                    <div className="hidden md:flex items-center space-x-8">
-                        <Link to="/userprofile" className="text-white/80 hover:text-white transition-colors duration-300">Profile</Link>
-                        <Link to="/problems" className="text-white hover:text-white font-medium">Problems</Link>
-                        <Link to="/submissions" className="text-white/80 hover:text-white transition-colors duration-300">Submissions</Link>
-                        <Link to="/contests" className="text-white/80 hover:text-white transition-colors duration-300">Contests</Link>
+                    {/* Navigation Links - centered */}
+                    <div className="hidden md:flex items-center flex-1 justify-center">
+                        <div className="flex items-center space-x-0.5">
+                            <Link to="/userprofile" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Profile</Link>
+                            <Link to="/problems" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Problems</Link>
+                            <Link to="/submissions" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Submissions</Link>
+                            <Link to="/contests" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Contests</Link>
+                        </div>
                     </div>
 
                     {/* Auth Buttons */}
-                    <div className="flex items-center space-x-4">
-                        <Link to="/login" className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg border border-white/20 transition-all duration-300 backdrop-blur-sm">
-                            Login
-                        </Link>
-                        <Link to="/register" className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg border border-white/20 transition-all duration-300 backdrop-blur-sm">
-                            Register
-                        </Link>
+                    <div className="flex items-center gap-2 md:gap-3">
+                        {!localStorage.getItem('user') && (
+                            <>
+                                <Link to="/login" className="hidden sm:inline-block text-white/70 hover:text-white px-3 py-2 rounded-md text-xs md:text-sm font-medium hover:bg-white/10 transition-all duration-200 whitespace-nowrap">
+                                    Login
+                                </Link>
+                                <Link to="/register" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
+                                    Register
+                                </Link>
+                            </>
+                        )}
                         {/* Logout button for authenticated users */}
                         {localStorage.getItem('user') && (
-                            <button onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors duration-200">
+                            <button onClick={handleLogout} className="bg-red-600/80 hover:bg-red-600 text-white p-2 rounded-md transition-all duration-200 hover:shadow-lg">
                                 <LogOut className="w-5 h-5" />
                             </button>
                         )}
