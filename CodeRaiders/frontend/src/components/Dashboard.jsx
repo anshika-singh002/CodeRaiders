@@ -31,39 +31,6 @@ const Dashboard = () => {
                 background: 'radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.15), transparent 50%), radial-gradient(ellipse at 40% 40%, rgba(120, 119, 255, 0.1), transparent 50%)'
             }}></div>
 
-            {/* Navbar */}
-            <nav className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10 w-full">
-                <div className="w-full px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        {/* Logo */}
-                        <div className="logo-card">
-                            <div className="logo-5">
-                                <div className="terminal"></div>
-                                <span className="brand-text">Code Raiders</span>
-                            </div>
-                        </div>
-
-                        {/* Navigation Links */}
-                        <div className="hidden md:flex items-center space-x-8">
-                            <Link to="/userprofile" className="text-white/80 hover:text-white transition-colors duration-300">Profile</Link>
-                            <Link to="/problems" className="text-white hover:text-white font-medium">Problems</Link>
-                            <Link to="/submissions" className="text-white/80 hover:text-white transition-colors duration-300">Submissions</Link>
-                            <Link to="/contests" className="text-white/80 hover:text-white transition-colors duration-300">Contests</Link>
-                        </div>
-
-                        {/* Auth Buttons */}
-                        <div className="flex items-center space-x-4">
-                            <Link to="/login" className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg border border-white/20 transition-all duration-300 backdrop-blur-sm">
-                                Login
-                            </Link>
-                            <Link to="/register" className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg border border-white/20 transition-all duration-300 backdrop-blur-sm">
-                                Register
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
             {/* Main Content - Full screen below navbar */}
             <div className="relative z-10 w-full h-[calc(100vh-88px)] flex items-center justify-center p-6">
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 w-full max-w-4xl">
