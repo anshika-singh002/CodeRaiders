@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 // import authService from '../services/authService'; // 👈 1. You no longer need this here
 import { useAuth } from '../context/AuthContext';
 
@@ -15,13 +16,13 @@ const Login = () => {
             // 👇 2. Replace the authService call with the login function from context
             await login(email, password);
 
-            alert("login successful!");
+            toast.success("Login successful!");
             navigate('/dashboard');
 
         } catch (error) {
             // The context's login function will throw an error if the API call fails
             console.error("Login failed: ", error.response?.data || error.message);
-            alert("Login failed: " + (error.response?.data?.message || "Invalid credentials"));
+            toast.error(error.response?.data?.message || "Invalid credentials");
         }
     };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import authService from '../services/authService';
 
 const Register = () => {
@@ -29,12 +30,12 @@ const Register = () => {
 
             );
             console.log("Registration successful!");
-            alert("Registration successful! You can now log in.");
+            toast.success("Registration successful! You can now log in.");
             navigate('/login');
         } catch (error) {
             console.error("Registration failed:", error.response?.data || error.message);
             const errorMessage = error.response?.data?.message || "Something went wrong. Please try again.";
-            alert("Registration failed:" + errorMessage);
+            toast.error("Registration failed: " + errorMessage);
         }
     };
 

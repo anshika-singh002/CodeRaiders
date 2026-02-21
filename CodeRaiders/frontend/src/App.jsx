@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Login from './components/Login.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import ProblemList from './components/ProblemList.jsx';
@@ -23,6 +24,7 @@ function App() {
 
     return (
         <>
+            <Toaster position="top-right" />
             {showNavbar && <Navbar />}
 
             <Routes>
