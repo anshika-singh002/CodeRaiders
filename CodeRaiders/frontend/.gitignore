@@ -1,0 +1,70 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+node_modules/
+
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# production build output
+/dist
+
+# local environment variables
+.env
+.env.local
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Vite-specific files
+.vite/
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Frontend build output
+frontend/dist/
+
+node_modules
+# Dependencies
+/node_modules
+
+# Production
+/build
+
+# Logs
+logs
+*.log
+
+# Environment variables
+.env

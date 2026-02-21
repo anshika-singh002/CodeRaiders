@@ -1,0 +1,14 @@
+node_modules/
+.env
+# Dependencies
+/node_modules
+
+# Production
+/build
+
+# Logs
+logs
+*.log
+
+# Environment variables
+.env
