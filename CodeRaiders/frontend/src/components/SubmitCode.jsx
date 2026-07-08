@@ -17,14 +17,26 @@ const SubmitCode = () => {
 
     // --- Run Code feature ---
     const [runCases, setRunCases] = useState([
-        { label: 'Custom Input 1', input: '', output: '', error: '' },
-        { label: 'Custom Input 2', input: '', output: '', error: '' }
+        { label: 'Custom Input 1', input: '', expectedOutput: '', output: '', hint: '' },
+        { label: 'Custom Input 2', input: '', expectedOutput: '', output: '', hint: '' }
     ]);
     const [isRunning, setIsRunning] = useState(false);
 
     // --- State for Submit Code feature ---
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null);
+
+    const normalizeOutput = (value) => {
+        if (typeof value !== 'string') {
+            return '';
+        }
+
+        return value
+            .trim()
+            .replace(/^output:\s*/i, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
 
     useEffect(() => {
         const fetchProblemDetails = async () => {
@@ -36,8 +48,20 @@ const SubmitCode = () => {
                 const firstCase = sampleCases[0]?.input || '';
                 const secondCase = sampleCases[1]?.input || sampleCases[0]?.input || '';
                 setRunCases([
-                    { label: 'Custom Input 1', input: firstCase, output: '', error: '' },
-                    { label: 'Custom Input 2', input: secondCase, output: '', error: '' }
+                    {
+                        label: 'Custom Input 1',
+                        input: firstCase,
+                        expectedOutput: normalizeOutput(sampleCases[0]?.output || ''),
+                        output: '',
+                        hint: ''
+                    },
+                    {
+                        label: 'Custom Input 2',
+                        input: secondCase,
+                        expectedOutput: normalizeOutput(sampleCases[1]?.output || ''),
+                        output: '',
+                        hint: ''
+                    }
                 ]);
             } catch (err) {
                 console.error("Failed to fetch problem details:", err);
@@ -71,9 +95,11 @@ const SubmitCode = () => {
                 currentCases.map((testCase, index) => ({
                     ...testCase,
                     output: responses[index]?.status === 'fulfilled' ? responses[index].value?.data?.output?.trim() || '' : '',
-                    error: responses[index]?.status === 'rejected'
-                        ? (responses[index].reason?.response?.data?.error || responses[index].reason?.response?.data?.message || responses[index].reason?.message || 'Execution failed.')
-                        : ''
+                    hint: responses[index]?.status === 'fulfilled' && normalizeOutput(responses[index].value?.data?.output || '') !== testCase.expectedOutput
+                        ? 'Hint: the output for this sample does not match the expected answer. Check whether your program is reading the input correctly and printing the computed result.'
+                        : (responses[index]?.status === 'rejected'
+                            ? (responses[index].reason?.response?.data?.error || responses[index].reason?.response?.data?.message || responses[index].reason?.message || 'Execution failed.')
+                            : '')
                 }))
             );
         } catch (err) {
@@ -175,7 +201,12 @@ const SubmitCode = () => {
                                                 <p className="whitespace-pre-wrap">{testCase.error}</p>
                                             </div>
                                         ) : (
-                                            <pre className="whitespace-pre-wrap">{testCase.output || 'Output will appear here.'}</pre>
+                                            <div className="space-y-2">
+                                                <pre className="whitespace-pre-wrap">{testCase.output || 'Output will appear here.'}</pre>
+                                                {testCase.hint && (
+                                                    <p className="whitespace-pre-wrap text-amber-300">{testCase.hint}</p>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>

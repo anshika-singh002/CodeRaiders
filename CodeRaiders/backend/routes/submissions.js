@@ -16,6 +16,18 @@ const languageMap = {
     cpp: 'cpp',
 };
 
+const normalizeOutput = (value) => {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value
+        .trim()
+        .replace(/^output:\s*/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
 // GET: Fetch all submissions for the authenticated user
 router.get('/', auth, async (req, res) => {
     try {
@@ -59,8 +71,8 @@ router.post('/', auth, async (req, res) => {
 
             try {
                 const output = await executeCode(languageCode, code, testCase.input);
-                const normalizedOutput = output.trim();
-                const expectedOutput = testCase.output.trim();
+                const normalizedOutput = normalizeOutput(output);
+                const expectedOutput = normalizeOutput(testCase.output);
                 const passed = normalizedOutput === expectedOutput;
 
                 testCaseResults.push({
