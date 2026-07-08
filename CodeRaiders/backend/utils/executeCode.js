@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -61,26 +61,55 @@ const executeCode = (language, code, inputData) => {
                 return reject(new Error('Unsupported language.'));
         }
 
-        const childProcess = exec(command, { input: inputData }, (error, stdout, stderr) => {
-            // Clean up the created files after execution
-            try { fs.unlinkSync(filepath); } catch (e) {}
+        const childProcess = spawn(command, {
+            shell: true,
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        childProcess.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        childProcess.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        childProcess.on('error', (error) => {
+            try { fs.unlinkSync(filepath); } catch (e) { }
             if (executablePath) {
-                try { fs.unlinkSync(executablePath); } catch (e) {}
+                try { fs.unlinkSync(executablePath); } catch (e) { }
             }
             if (language === 'java') {
-                 try { fs.unlinkSync(path.join(outputPath, 'Main.class')); } catch (e) {}
+                try { fs.unlinkSync(path.join(outputPath, 'Main.class')); } catch (e) { }
+            }
+            reject(new Error(error.message || 'Execution failed.'));
+        });
+
+        childProcess.on('close', (code) => {
+            // Clean up the created files after execution
+            try { fs.unlinkSync(filepath); } catch (e) { }
+            if (executablePath) {
+                try { fs.unlinkSync(executablePath); } catch (e) { }
+            }
+            if (language === 'java') {
+                try { fs.unlinkSync(path.join(outputPath, 'Main.class')); } catch (e) { }
             }
 
-            if (error || stderr) {
-                return reject(error || stderr);
+            const stderrText = stderr.trim();
+            if (code !== 0 || stderrText) {
+                return reject(new Error(stderrText || `Execution failed with exit code ${code}.`));
             }
+
             resolve(stdout);
         });
 
         if (inputData) {
             childProcess.stdin.write(inputData);
-            childProcess.stdin.end();
         }
+        childProcess.stdin.end();
     });
 };
 

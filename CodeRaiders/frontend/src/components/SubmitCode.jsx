@@ -15,11 +15,13 @@ const SubmitCode = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // --- NEW State for Run Code feature ---
-    const [customInput, setCustomInput] = useState('');
-    const [runOutput, setRunOutput] = useState('');
+    // --- Run Code feature ---
+    const [runCases, setRunCases] = useState([
+        { label: 'Custom Input 1', input: '', output: '', error: '' },
+        { label: 'Custom Input 2', input: '', output: '', error: '' }
+    ]);
     const [isRunning, setIsRunning] = useState(false);
-    
+
     // --- State for Submit Code feature ---
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null);
@@ -29,11 +31,14 @@ const SubmitCode = () => {
             try {
                 const response = await apiPrivate.get(`/api/problems/${problemId}`);
                 setProblem(response.data);
-                setCode(getBoilerplate(language, response.data.functionName));
-                // Pre-fill custom input with the first test case
-                if (response.data.testCases && response.data.testCases.length > 0) {
-                    setCustomInput(response.data.testCases[0].input);
-                }
+                setCode('');
+                const sampleCases = (response.data.testCases || []).slice(0, 2);
+                const firstCase = sampleCases[0]?.input || '';
+                const secondCase = sampleCases[1]?.input || sampleCases[0]?.input || '';
+                setRunCases([
+                    { label: 'Custom Input 1', input: firstCase, output: '', error: '' },
+                    { label: 'Custom Input 2', input: secondCase, output: '', error: '' }
+                ]);
             } catch (err) {
                 console.error("Failed to fetch problem details:", err);
                 setError("Could not load the problem.");
@@ -47,41 +52,38 @@ const SubmitCode = () => {
     // Update boilerplate when language changes
     useEffect(() => {
         if (problem) {
-            setCode(getBoilerplate(language, problem.functionName));
+            setCode('');
         }
     }, [language, problem]);
 
-
-    const getBoilerplate = (lang, functionName = 'solve') => {
-        switch (lang) {
-            case 'javascript': return `function ${functionName}(input) {\n  // Your code here\n  console.log("Hello, World!");\n}`;
-            case 'python': return `def ${functionName}(input):\n  # Your code here\n  print("Hello, World!")`;
-            case 'java': return `public class Solution {\n    public static void ${functionName}(String input) {\n        // Your code here\n        System.out.println("Hello, World!");\n    }\n}`;
-            case 'cpp': return `#include <iostream>\n#include <string>\n\nvoid ${functionName}(std::string input) {\n    // Your code here\n    std::cout << "Hello, World!" << std::endl;\n}`;
-            default: return '';
-        }
-    };
-
-    // --- NEW: Function to handle "Run Code" ---
+    // --- Run Code ---
     const handleRunCode = async () => {
         setIsRunning(true);
-        setRunOutput('');
+
+        const inputs = runCases.map((testCase) => testCase.input);
+
         try {
-            const response = await apiPrivate.post('/api/execute', {
-                language,
-                code,
-                input: customInput,
-            });
-            setRunOutput(response.data.output);
+            const responses = await Promise.allSettled(
+                inputs.map((input) => apiPrivate.post('/api/execute', { language, code, input }))
+            );
+
+            setRunCases((currentCases) =>
+                currentCases.map((testCase, index) => ({
+                    ...testCase,
+                    output: responses[index]?.status === 'fulfilled' ? responses[index].value?.data?.output?.trim() || '' : '',
+                    error: responses[index]?.status === 'rejected'
+                        ? (responses[index].reason?.response?.data?.error || responses[index].reason?.response?.data?.message || responses[index].reason?.message || 'Execution failed.')
+                        : ''
+                }))
+            );
         } catch (err) {
             console.error("Run code failed:", err);
-            setRunOutput(err.response?.data?.message || "An error occurred while running the code.");
         } finally {
             setIsRunning(false);
         }
     };
 
-    // This is the original submission function, renamed for clarity
+    // --- Submit Code ---
     const handleSubmitCode = async () => {
         setIsSubmitting(true);
         setSubmissionResult(null);
@@ -109,7 +111,7 @@ const SubmitCode = () => {
             {/* Left Pane: Problem Description */}
             <div className="w-1/2 p-8 overflow-y-auto custom-scrollbar">
                 <h1 className="text-4xl font-bold mb-4">{problem?.title}</h1>
-                 <div className={`px-3 py-1 inline-block rounded-full text-sm font-medium mb-6 ${ problem?.difficulty === 'Easy' ? 'bg-green-900/50 text-green-300' : problem?.difficulty === 'Medium' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-red-900/50 text-red-300' }`}>
+                <div className={`px-3 py-1 inline-block rounded-full text-sm font-medium mb-6 ${problem?.difficulty === 'Easy' ? 'bg-green-900/50 text-green-300' : problem?.difficulty === 'Medium' ? 'bg-yellow-900/50 text-yellow-300' : 'bg-red-900/50 text-red-300'}`}>
                     {problem?.difficulty}
                 </div>
                 <div className="prose prose-invert max-w-none prose-p:text-slate-300 prose-code:text-blue-300 prose-headings:text-white">
@@ -142,25 +144,43 @@ const SubmitCode = () => {
                 <div className="flex-grow relative h-[50%]">
                     <Editor height="100%" language={language} theme="vs-dark" value={code} onChange={(value) => setCode(value || '')} options={{ fontSize: 14, minimap: { enabled: false } }} />
                 </div>
-                
-                {/* --- NEW: Test Case / Output Panel --- */}
+
+                {/* --- NEW: Two-up run panel --- */}
                 <div className="flex-grow flex flex-col h-[50%] border-t border-slate-700">
                     <div className="p-4 bg-slate-800">
-                         <h3 className="text-lg font-semibold">Test with Custom Input</h3>
+                        <h3 className="text-lg font-semibold">Test with Custom Input</h3>
                     </div>
-                    <div className="flex-grow p-4">
-                        <textarea
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            placeholder="Enter your custom input here..."
-                            className="w-full h-full bg-slate-950 text-white font-mono text-sm p-4 rounded-md border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"
-                        />
-                    </div>
-                     <div className="p-4 bg-slate-800 border-t border-slate-700">
-                        <h3 className="text-lg font-semibold mb-2">Output</h3>
-                        <pre className="w-full h-24 bg-slate-950 text-white font-mono text-sm p-4 rounded-md overflow-y-auto custom-scrollbar border border-slate-700">
-                            {isRunning ? 'Running...' : (runOutput || 'Your code output will appear here.')}
-                        </pre>
+                    <div className="grid flex-grow gap-0 border-t border-slate-700 lg:grid-cols-2">
+                        {runCases.map((testCase, index) => (
+                            <div key={testCase.label} className={`flex min-h-0 flex-col ${index === 0 ? 'border-b border-slate-700 lg:border-b-0 lg:border-r' : ''} border-slate-700`}>
+                                <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
+                                    <h4 className="font-semibold">{testCase.label}</h4>
+                                </div>
+                                <div className="flex flex-1 min-h-0 flex-col p-4 gap-3">
+                                    <textarea
+                                        value={testCase.input}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setRunCases((currentCases) => currentCases.map((currentTestCase, currentIndex) => (
+                                                currentIndex === index ? { ...currentTestCase, input: value } : currentTestCase
+                                            )));
+                                        }}
+                                        placeholder="Enter your custom input here..."
+                                        className="min-h-[120px] w-full flex-1 rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"
+                                    />
+                                    <div className="flex-1 rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white overflow-y-auto custom-scrollbar">
+                                        {isRunning ? 'Running...' : testCase.error ? (
+                                            <div className="space-y-2 text-red-300">
+                                                <p className="font-semibold">Mistake detected</p>
+                                                <p className="whitespace-pre-wrap">{testCase.error}</p>
+                                            </div>
+                                        ) : (
+                                            <pre className="whitespace-pre-wrap">{testCase.output || 'Output will appear here.'}</pre>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -171,13 +191,24 @@ const SubmitCode = () => {
                         Run
                     </button>
                     <button onClick={handleSubmitCode} disabled={isSubmitting || isRunning} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-                         {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                         Submit
                     </button>
                 </div>
-                 {submissionResult && (
-                    <div className={`m-4 p-4 rounded-md text-center ${submissionResult.result === 'Accepted' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
-                        <p className="font-bold text-lg">{submissionResult.result}</p>
+                {submissionResult && (
+                    <div className={`m-4 p-4 rounded-md ${submissionResult.result === 'Accepted' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
+                        <p className="font-bold text-lg text-center">{submissionResult.result}</p>
+                        {submissionResult.testCaseResults && (
+                            <div className="mt-4 space-y-3 text-sm">
+                                {submissionResult.testCaseResults.map((item) => (
+                                    <div key={item.caseNumber} className="rounded-md border border-white/10 bg-black/20 p-3">
+                                        <p className="font-semibold">Test Case {item.caseNumber}: {item.passed ? 'Passed' : 'Failed'}</p>
+                                        <p className="mt-1 text-slate-300">Expected: {item.expectedOutput}</p>
+                                        <p className="text-slate-300">Actual: {item.actualOutput}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

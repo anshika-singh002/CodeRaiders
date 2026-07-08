@@ -21,7 +21,7 @@ router.get('/', auth, async (req, res) => {
     try {
         const submissions = await Submission.find({ userId: req.user.id })
             .populate('problemId', 'title difficulty')
-             .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 });
         res.status(200).json(submissions);
     } catch (error) {
         console.error('Error fetching submissions:', error);
@@ -44,20 +44,64 @@ router.post('/', auth, async (req, res) => {
         if (!problem) {
             return res.status(404).json({ message: 'Problem not found' });
         }
-        
-        // This is a simple implementation that only runs the first test case.
-        const inputData = problem.testCases[0].input;
-        const expectedOutput = problem.testCases[0].output.trim();
 
-        // 👈 CORRECT: Actually call the executeCode utility
-        const startTime = Date.now();
-        const output = await executeCode(languageCode, code, inputData);
-        const executionTime = Date.now() - startTime;
-        
-        let result = 'Wrong Answer';
-        if (output.trim() === expectedOutput) {
-            result = 'Accepted';
+        const sampleTestCases = (problem.testCases || []).slice(0, 2);
+        if (sampleTestCases.length === 0) {
+            return res.status(400).json({ message: 'Problem does not contain any test cases.' });
         }
+
+        const startTime = Date.now();
+        const testCaseResults = [];
+        let result = 'Accepted';
+
+        for (let index = 0; index < sampleTestCases.length; index += 1) {
+            const testCase = sampleTestCases[index];
+
+            try {
+                const output = await executeCode(languageCode, code, testCase.input);
+                const normalizedOutput = output.trim();
+                const expectedOutput = testCase.output.trim();
+                const passed = normalizedOutput === expectedOutput;
+
+                testCaseResults.push({
+                    caseNumber: index + 1,
+                    input: testCase.input,
+                    expectedOutput,
+                    actualOutput: normalizedOutput,
+                    passed
+                });
+
+                if (!passed) {
+                    result = 'Wrong Answer';
+                }
+            } catch (executionError) {
+                result = 'Runtime Error';
+                testCaseResults.push({
+                    caseNumber: index + 1,
+                    input: testCase.input,
+                    expectedOutput: testCase.output.trim(),
+                    actualOutput: executionError.message,
+                    passed: false,
+                    error: executionError.message
+                });
+                break;
+            }
+        }
+
+        const executionTime = Date.now() - startTime;
+        const output = testCaseResults
+            .map((item) => {
+                if (item.error) {
+                    return `Test Case ${item.caseNumber}: Runtime Error\n${item.error}`;
+                }
+
+                return [
+                    `Test Case ${item.caseNumber}: ${item.passed ? 'Passed' : 'Failed'}`,
+                    `Expected: ${item.expectedOutput}`,
+                    `Actual: ${item.actualOutput}`
+                ].join('\n');
+            })
+            .join('\n\n');
 
         const newSubmission = await Submission.create({
             userId,
@@ -69,7 +113,10 @@ router.post('/', auth, async (req, res) => {
             executionTime
         });
 
-        res.status(201).json(newSubmission);
+        res.status(201).json({
+            ...newSubmission.toObject(),
+            testCaseResults
+        });
     } catch (error) {
         console.error('Submission Error:', error);
         res.status(500).json({
