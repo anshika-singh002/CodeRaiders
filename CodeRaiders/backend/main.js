@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/problems', problemsRouter); //Mount the router under the '/api' base path
 app.use('/api/submissions', submissionsRouter);
 app.use('/api/users', usersRouter);
-app.use('/api/execute', executeRouter); 
+app.use('/api/execute', executeRouter);
 
 
 //always make a "/" route and get route its god for production
@@ -52,13 +52,18 @@ app.post("/register", async (req, res) => {
         //check that all the data should exist
 
         if (!(firstname && lastname && email && password && phoneno)) {
-            return res.status(404).json("Please enter all the information");
+            return res.status(400).json({ message: "Please enter all the information." });
         }
         //check if the user already exists
         //add more validations -TODO
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(409).json("User with same email already exists");
+            return res.status(409).json({ message: "A user with that email already exists." });
+        }
+
+        const existingPhone = await User.findOne({ phoneno });
+        if (existingPhone) {
+            return res.status(409).json({ message: "A user with that phone number already exists." });
         }
 
         //hashing/encrypt the password
@@ -119,7 +124,7 @@ app.post("/register", async (req, res) => {
         }
         // For all other errors, send a generic internal server error.
         console.error("Registration error:", error); // Log the full error for debugging
-        res.status(500).json({ message: " Internal server error during registration." });
+        res.status(500).json({ message: error.message || "Internal server error during registration." });
     }
 });
 
@@ -133,13 +138,13 @@ app.post("/login", async (req, res) => {
         }
 
         const existingUser = await User.findOne({ email }).select('+password');
-        console.log('User found:', existingUser); 
+        console.log('User found:', existingUser);
         //its better todo a combined check for userexistence and password match from generic error message
 
         if (!existingUser || !(await bcrypt.compare(password, existingUser.password))) {
             return res.status(401).json({ message: "Invalid email or password." });
         }
-21  
+        21
 
 
         //generate jwt token on suxxessful login 

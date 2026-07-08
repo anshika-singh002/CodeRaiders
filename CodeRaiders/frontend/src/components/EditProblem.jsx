@@ -11,7 +11,8 @@ const EditProblem = () => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        difficulty: 'Easy'
+        difficulty: 'Easy',
+        tags: ''
     });
     const [testCases, setTestCases] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -27,6 +28,7 @@ const EditProblem = () => {
                     title: problem.title,
                     description: problem.description,
                     difficulty: problem.difficulty,
+                    tags: Array.isArray(problem.tags) ? problem.tags.join(', ') : ''
                 });
                 setTestCases(problem.testCases);
                 setLoading(false);
@@ -62,7 +64,14 @@ const EditProblem = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const problemData = { ...formData, testCases };
+            const problemData = {
+                ...formData,
+                tags: formData.tags
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(Boolean),
+                testCases
+            };
             await ProblemService.updateProblem(problemId, problemData);
             alert('Problem updated successfully!');
             navigate('/problems'); // Redirect to the problem list
@@ -102,6 +111,13 @@ const EditProblem = () => {
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
                 </select>
+                <input
+                    type="text"
+                    name="tags"
+                    value={formData.tags}
+                    onChange={handleFormChange}
+                    placeholder="Tags, comma separated"
+                />
                 <h3>Test Cases</h3>
                 {testCases.map((testCase, index) => (
                     <div key={index}>

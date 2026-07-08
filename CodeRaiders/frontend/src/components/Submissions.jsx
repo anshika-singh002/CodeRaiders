@@ -98,7 +98,7 @@ const Submissions = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 py-8">
-            <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+            <div className="px-4 sm:px-6 lg:px-8 w-full">
                 <div className="bg-slate-800 rounded-xl shadow-2xl overflow-hidden">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8">

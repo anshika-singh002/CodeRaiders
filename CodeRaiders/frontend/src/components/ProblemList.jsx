@@ -35,8 +35,8 @@ const ProblemList = () => {
     useEffect(() => {
         let filtered = problems.filter(problem => {
             const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                  problem.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                  (problem.tags && problem.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+                problem.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (problem.tags && problem.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
             const matchesDifficulty = difficultyFilter === 'All' || problem.difficulty === difficultyFilter;
             return matchesSearch && matchesDifficulty;
         });
@@ -93,7 +93,7 @@ const ProblemList = () => {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -111,7 +111,7 @@ const ProblemList = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 p-4 lg:p-8">
-            <div className="max-w-7xl mx-auto">
+            <div className="w-full px-4">
                 <div className="bg-slate-800 rounded-xl shadow-2xl overflow-hidden mb-6">
                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 sm:px-6 py-6 sm:py-8">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -123,7 +123,7 @@ const ProblemList = () => {
                                 <p className="text-indigo-100 mt-1 sm:mt-2">Master your coding skills with challenging problems</p>
                             </div>
                             {auth.user && auth.user.role === 'admin' && (
-                                <Link to="/problems/new" className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center gap-2 backdrop-blur-sm border border-white/20">
+                                <Link to="/admin/problems/new" className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center gap-2 backdrop-blur-sm border border-white/20">
                                     <Plus className="w-5 h-5" />
                                     Create Problem
                                 </Link>
@@ -233,7 +233,7 @@ const ProblemList = () => {
                                             </Link>
                                             {auth.user && auth.user.role === 'admin' && (
                                                 <>
-                                                    <Link to={`/problems/edit/${problem._id}`}>
+                                                    <Link to={`/admin/problems/edit/${problem._id}`}>
                                                         <button className="bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-lg transition-colors duration-200">
                                                             <Edit className="w-4 h-4" />
                                                         </button>
@@ -262,7 +262,7 @@ const ProblemList = () => {
                                 : "Get started by creating your first problem!"}
                         </p>
                         {auth.user && auth.user.role === 'admin' && (
-                            <Link to="/problems/new" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto w-fit">
+                            <Link to="/admin/problems/new" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto w-fit">
                                 <Plus className="w-5 h-5" />
                                 Create First Problem
                             </Link>

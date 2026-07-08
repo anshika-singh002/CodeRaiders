@@ -110,7 +110,7 @@ const Contests = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <h2 className="text-3xl font-bold text-white flex items-center gap-3">
             <Trophy className="w-8 h-8" />

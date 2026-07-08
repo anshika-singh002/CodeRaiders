@@ -14,6 +14,7 @@ import Navbar from './components/Navbar.jsx';
 import UserProfile from './components/UserProfile.jsx';
 import Contests from './components/Contests.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminRoute from './components/AdminRoute.jsx';
 import './App.css';
 
 function App() {
@@ -37,13 +38,19 @@ function App() {
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/problems/new" element={<CreateProblem />} />
-                    <Route path="/problems/edit/:id" element={<EditProblem />} />
                     <Route path="/problems/:problemId/submit" element={<SubmitCode />} />
                     <Route path="/contests" element={<Contests />} />
                     <Route path="/submissions" element={<Submissions />} />
                     <Route path="/userprofile" element={<UserProfile />} />
                     {/* ❌ The duplicate /problems route has been removed for clarity */}
+                </Route>
+
+                {/* Admin-only routes */}
+                <Route element={<AdminRoute />}>
+                    <Route path="/admin/problems/new" element={<CreateProblem />} />
+                    <Route path="/problems/new" element={<CreateProblem />} />
+                    <Route path="/admin/problems/edit/:id" element={<EditProblem />} />
+                    <Route path="/problems/edit/:id" element={<EditProblem />} />
                 </Route>
             </Routes>
         </>

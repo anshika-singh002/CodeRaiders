@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 
 const Navbar = () => {
+    const currentUser = JSON.parse(localStorage.getItem('user'));
     const handleLogout = () => {
         localStorage.removeItem('user');
         window.location.reload(); // Reloads the page to log the user out
     };
 
     return (
-        <nav className="sticky top-0 z-50 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-md border-b border-white/5 shadow-lg">
+        <nav className="sticky top-0 z-50 w-screen bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-md border-b border-white/5 shadow-lg">
             <div className="w-full px-4 md:px-6 py-2.5">
                 <div className="flex items-center justify-start md:justify-between gap-4">
                     {/* Logo - now a clickable link */}
@@ -29,6 +30,9 @@ const Navbar = () => {
                             <Link to="/problems" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Problems</Link>
                             <Link to="/submissions" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Submissions</Link>
                             <Link to="/contests" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Contests</Link>
+                            {currentUser?.role === 'admin' && (
+                                <Link to="/admin/problems/new" className="px-3 py-2 rounded-md text-xs md:text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">Add Problem</Link>
+                            )}
                         </div>
                     </div>
 

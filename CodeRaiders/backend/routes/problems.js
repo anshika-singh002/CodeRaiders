@@ -1,14 +1,15 @@
 import express from 'express';
 import { Problem } from '../models/Problem.js'; // Ensure Problem model is correctly imported
 import auth from '../middleware/auth.js'; // Your auth middleware
+import authorize from '../middleware/authorize.js';
 
 const router = express.Router();
 
-// CREATE: Add a new problem (protected route)
+// CREATE: Add a new problem (admin only)
 // Path changed from '/problems' to '/'
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, authorize(['admin']), async (req, res) => {
     try {
-        const { title, description, difficulty, testCases } = req.body;
+        const { title, description, difficulty, testCases, tags } = req.body;
 
         // 👈 Added: Check if testCases exist and are not empty
         if (!testCases || testCases.length === 0) {
@@ -21,6 +22,7 @@ router.post('/', auth, async (req, res) => {
             description,
             difficulty,
             testCases,
+            tags: Array.isArray(tags) ? tags : [],
             author: req.user.id
         });
 
@@ -61,11 +63,11 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// UPDATE: Update a problem by ID (Protected route)
+// UPDATE: Update a problem by ID (admin only)
 // Path changed from '/problems/:id' to '/:id'
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, authorize(['admin']), async (req, res) => {
     try {
-        const { title, description, difficulty, testCases } = req.body;
+        const { title, description, difficulty, testCases, tags } = req.body;
 
         // 👈 Added: Check if testCases exist and are not empty on update
         if (!testCases || testCases.length === 0) {
@@ -74,7 +76,7 @@ router.put('/:id', auth, async (req, res) => {
 
         const problem = await Problem.findOneAndUpdate(
             { _id: req.params.id, author: req.user.id },
-            { title, description, difficulty, testCases }, // 👈 Explicitly passing the updated fields
+            { title, description, difficulty, testCases, tags: Array.isArray(tags) ? tags : [] }, // 👈 Explicitly passing the updated fields
             { new: true, runValidators: true }
         );
 
@@ -88,9 +90,9 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// DELETE: Delete a problem by ID (Protected route)
+// DELETE: Delete a problem by ID (admin only)
 // Path changed from '/problems/:id' to '/:id'
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, authorize(['admin']), async (req, res) => {
     try {
         const problem = await Problem.findOneAndDelete({ _id: req.params.id, author: req.user.id });
         if (!problem) {
