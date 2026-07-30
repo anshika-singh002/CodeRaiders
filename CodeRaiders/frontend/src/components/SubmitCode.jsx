@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useAxiosPrivate from '../hooks/useAxiosPrivate';
 import { Editor } from '@monaco-editor/react';
 import { Loader2, ServerCrash, Play, Send } from 'lucide-react';
+import { useClientExecutor } from '../hooks/useClientExecutor';
 
 const SubmitCode = () => {
     const { problemId } = useParams();
     const navigate = useNavigate();
     const apiPrivate = useAxiosPrivate();
+    const { runLocally, pyodideLoading } = useClientExecutor();
 
     const [problem, setProblem] = useState(null);
     const [code, setCode] = useState('');
@@ -80,27 +82,41 @@ const SubmitCode = () => {
         }
     }, [language, problem]);
 
-    // --- Run Code ---
+    // --- Run Code (Client Side Execution for Practice) ---
     const handleRunCode = async () => {
         setIsRunning(true);
 
-        const inputs = runCases.map((testCase) => testCase.input);
-
         try {
-            const responses = await Promise.allSettled(
-                inputs.map((input) => apiPrivate.post('/api/execute', { language, code, input }))
+            const results = await Promise.all(
+                runCases.map(async (testCase) => {
+                    if (language === 'javascript' || language === 'python') {
+                        return await runLocally(language, code, testCase.input);
+                    } else {
+                        // Fallback to server execution if language isn't supported client side
+                        try {
+                            const res = await apiPrivate.post('/api/execute', { language, code, input: testCase.input });
+                            return { output: res.data?.output?.trim() || '' };
+                        } catch (err) {
+                            return { error: err.response?.data?.message || err.message };
+                        }
+                    }
+                })
             );
 
             setRunCases((currentCases) =>
-                currentCases.map((testCase, index) => ({
-                    ...testCase,
-                    output: responses[index]?.status === 'fulfilled' ? responses[index].value?.data?.output?.trim() || '' : '',
-                    hint: responses[index]?.status === 'fulfilled' && normalizeOutput(responses[index].value?.data?.output || '') !== testCase.expectedOutput
-                        ? 'Hint: the output for this sample does not match the expected answer. Check whether your program is reading the input correctly and printing the computed result.'
-                        : (responses[index]?.status === 'rejected'
-                            ? (responses[index].reason?.response?.data?.error || responses[index].reason?.response?.data?.message || responses[index].reason?.message || 'Execution failed.')
-                            : '')
-                }))
+                currentCases.map((testCase, index) => {
+                    const res = results[index];
+                    const out = res.output ? res.output.trim() : '';
+                    const err = res.error || '';
+                    const isMatch = normalizeOutput(out) === testCase.expectedOutput;
+
+                    return {
+                        ...testCase,
+                        output: out,
+                        error: err,
+                        hint: err ? '' : (!isMatch ? 'Hint: the output for this sample does not match the expected answer. Check your computation logic.' : '')
+                    };
+                })
             );
         } catch (err) {
             console.error("Run code failed:", err);
@@ -113,6 +129,64 @@ const SubmitCode = () => {
     const handleSubmitCode = async () => {
         setIsSubmitting(true);
         setSubmissionResult(null);
+
+        // If practice problem & JS/Python, evaluate test cases locally for instant feedback before saving submission
+        if (language === 'javascript' || language === 'python') {
+            const sampleTestCases = (problem?.testCases || []).slice(0, 2);
+            const testCaseResults = [];
+            let overallResult = 'Accepted';
+
+            for (let i = 0; i < sampleTestCases.length; i++) {
+                const tc = sampleTestCases[i];
+                const res = await runLocally(language, code, tc.input);
+                const actualOutput = normalizeOutput(res.output || '');
+                const expectedOutput = normalizeOutput(tc.output || '');
+
+                if (res.error) {
+                    overallResult = 'Runtime Error';
+                    testCaseResults.push({
+                        caseNumber: i + 1,
+                        input: tc.input,
+                        expectedOutput,
+                        actualOutput: res.error,
+                        passed: false,
+                        error: res.error
+                    });
+                    break;
+                }
+
+                const passed = actualOutput === expectedOutput;
+                if (!passed) overallResult = 'Wrong Answer';
+
+                testCaseResults.push({
+                    caseNumber: i + 1,
+                    input: tc.input,
+                    expectedOutput,
+                    actualOutput,
+                    passed
+                });
+            }
+
+            try {
+                // Record submission to backend
+                const response = await apiPrivate.post('/api/submissions', {
+                    problemId,
+                    language,
+                    code,
+                    clientResult: { result: overallResult, testCaseResults }
+                });
+                setSubmissionResult(response.data.testCaseResults ? response.data : { result: overallResult, testCaseResults });
+                setTimeout(() => navigate('/submissions'), 2000);
+            } catch (err) {
+                setSubmissionResult({ result: overallResult, testCaseResults });
+                setTimeout(() => navigate('/submissions'), 2000);
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
+
+        // Fallback server submit for other languages
         try {
             const response = await apiPrivate.post('/api/submissions', {
                 problemId,
@@ -172,17 +246,17 @@ const SubmitCode = () => {
                 </div>
 
                 {/* --- NEW: Two-up run panel --- */}
-                <div className="flex-grow flex flex-col h-[50%] border-t border-slate-700">
+                <div className="flex-grow flex min-h-0 flex-col h-[50%] border-t border-slate-700 overflow-hidden">
                     <div className="p-4 bg-slate-800">
                         <h3 className="text-lg font-semibold">Test with Custom Input</h3>
                     </div>
-                    <div className="grid flex-grow gap-0 border-t border-slate-700 lg:grid-cols-2">
+                    <div className="grid flex-grow min-h-0 gap-0 border-t border-slate-700 overflow-hidden lg:grid-cols-2">
                         {runCases.map((testCase, index) => (
-                            <div key={testCase.label} className={`flex min-h-0 flex-col ${index === 0 ? 'border-b border-slate-700 lg:border-b-0 lg:border-r' : ''} border-slate-700`}>
+                            <div key={testCase.label} className={`flex min-h-0 flex-col overflow-hidden ${index === 0 ? 'border-b border-slate-700 lg:border-b-0 lg:border-r' : ''} border-slate-700`}>
                                 <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
                                     <h4 className="font-semibold">{testCase.label}</h4>
                                 </div>
-                                <div className="flex flex-1 min-h-0 flex-col p-4 gap-3">
+                                <div className="flex flex-1 min-h-0 flex-col p-4 gap-3 overflow-hidden">
                                     <textarea
                                         value={testCase.input}
                                         onChange={(e) => {
@@ -192,9 +266,9 @@ const SubmitCode = () => {
                                             )));
                                         }}
                                         placeholder="Enter your custom input here..."
-                                        className="min-h-[120px] w-full flex-1 rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"
+                                        className="min-h-[90px] w-full flex-[0.8] rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"
                                     />
-                                    <div className="flex-1 rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white overflow-y-auto custom-scrollbar">
+                                    <div className="min-h-0 flex-[1.4] rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-sm text-white overflow-y-auto custom-scrollbar">
                                         {isRunning ? 'Running...' : testCase.error ? (
                                             <div className="space-y-2 text-red-300">
                                                 <p className="font-semibold">Mistake detected</p>

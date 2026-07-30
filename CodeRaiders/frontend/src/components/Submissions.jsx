@@ -130,7 +130,7 @@ const Submissions = () => {
                                 {submissions.map((submission, index) => (
                                     <tr key={submission._id} className="hover:bg-slate-700/30 transition-all duration-200 group">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <Link to={`/problems/${submission.problemId?._id}`} className="flex items-center group">
+                                            <Link to={`/problems/${submission.problemId?._id}/submit`} className="flex items-center group">
                                                 <div className="flex-shrink-0 w-2 h-8 bg-blue-500 rounded-full mr-4 opacity-60 group-hover:opacity-100 transition-opacity"></div>
                                                 <div>
                                                     <div className="text-base font-semibold text-white group-hover:text-blue-300 transition-colors">

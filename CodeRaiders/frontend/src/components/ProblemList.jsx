@@ -191,7 +191,7 @@ const ProblemList = () => {
                                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <Link to={`/problems/${problem._id}`} className="flex items-center gap-3">
+                                                <Link to={`/problems/${problem._id}/submit`} className="flex items-center gap-3">
                                                     <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors">
                                                         {problem.title}
                                                     </h3>

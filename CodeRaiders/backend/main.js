@@ -14,6 +14,7 @@ import problemsRouter from './routes/problems.js';
 import submissionsRouter from './routes/submissions.js';
 import cookieParser from 'cookie-parser';
 import executeRouter from './routes/execute.js';
+import contestsRouter from './routes/contests.js';
 
 dotenv.config();
 DBConnection();
@@ -34,6 +35,7 @@ app.use('/api/problems', problemsRouter); //Mount the router under the '/api' ba
 app.use('/api/submissions', submissionsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/execute', executeRouter);
+app.use('/api/contests', contestsRouter);
 
 
 //always make a "/" route and get route its god for production
@@ -48,15 +50,19 @@ app.post("/register", async (req, res) => {
     try { //http method 'get' "/" is the request and response is hello world
         //get all the the data from frontend 
         const { firstname, lastname, email, password, phoneno } = req.body;//as bodyy is the frontend form of register
+        const normalizedEmail = email?.trim().toLowerCase();
+        const emailPattern = normalizedEmail
+            ? new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+            : null;
 
         //check that all the data should exist
 
-        if (!(firstname && lastname && email && password && phoneno)) {
+        if (!(firstname && lastname && normalizedEmail && password && phoneno)) {
             return res.status(400).json({ message: "Please enter all the information." });
         }
         //check if the user already exists
         //add more validations -TODO
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email: emailPattern });
         if (existingUser) {
             return res.status(409).json({ message: "A user with that email already exists." });
         }
@@ -73,7 +79,7 @@ app.post("/register", async (req, res) => {
         const newUser = await User.create({
             firstname,
             lastname,
-            email,
+            email: normalizedEmail,
             password: hashedPassword,
             phoneno,
             role: 'user' //Assignin default role
@@ -132,19 +138,38 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = email?.trim().toLowerCase();
+        const emailPattern = normalizedEmail
+            ? new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+            : null;
 
-        if (!email || !password) {
+        if (!normalizedEmail || !password) {
             return res.status(400).json({ message: "Please enter both email and password." });
         }
 
-        const existingUser = await User.findOne({ email }).select('+password');
+        const existingUser = await User.findOne({ email: emailPattern }).select('+password');
         console.log('User found:', existingUser);
         //its better todo a combined check for userexistence and password match from generic error message
 
-        if (!existingUser || !(await bcrypt.compare(password, existingUser.password))) {
+        const storedPassword = existingUser?.password;
+        const isBcryptHash = typeof storedPassword === 'string' && storedPassword.startsWith('$2');
+        const passwordMatches = existingUser
+            ? (isBcryptHash ? await bcrypt.compare(password, storedPassword) : password === storedPassword)
+            : false;
+
+        if (!existingUser || !passwordMatches) {
             return res.status(401).json({ message: "Invalid email or password." });
         }
-        21
+
+        if (!isBcryptHash) {
+            existingUser.password = await bcrypt.hash(password, 10);
+        }
+
+        if (existingUser.email !== normalizedEmail) {
+            existingUser.email = normalizedEmail;
+        }
+
+        await existingUser.save();
 
 
         //generate jwt token on suxxessful login 
@@ -175,7 +200,7 @@ app.post("/login", async (req, res) => {
         // 4. Send the Access Token and user info in the JSON response
         existingUser.password = undefined; // Don't send the password hash
         res.status(200).json({
-            messae: "Login successful!",
+            message: "Login successful!",
             accessToken: accessToken, // Send the access token
             user: {
                 id: existingUser._id,

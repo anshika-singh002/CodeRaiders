@@ -3,7 +3,7 @@ import dotenv from 'dotenv'; // as mongodb.url is sensitiveso we need to secure 
 dotenv.config();
 
 const DBConnection = async () => {
-    const MONGOO_URL = process.env.MONGODB_URL; //mongodburl is sensitvive to secure it we use process.env
+    const MONGOO_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017/coderaiders'; // fallback to local DB if env var missing
 
 
     try {

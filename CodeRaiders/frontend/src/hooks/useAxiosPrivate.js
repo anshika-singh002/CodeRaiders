@@ -5,13 +5,15 @@ import { useAuth } from '../context/AuthContext';
 
 const useAxiosPrivate = () => {
   const { auth, setAuth } = useAuth();
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  const accessToken = auth.accessToken || storedUser?.token;
 
   useEffect(() => {
     // Interceptor to add the token to requests
     const requestIntercept = api.interceptors.request.use(
       (config) => {
-        if (!config.headers['Authorization']) {
-          config.headers['Authorization'] = `Bearer ${auth.accessToken}`;
+        if (!config.headers['Authorization'] && accessToken) {
+          config.headers['Authorization'] = `Bearer ${accessToken}`;
         }
         return config;
       },
@@ -52,7 +54,7 @@ const useAxiosPrivate = () => {
       api.interceptors.request.eject(requestIntercept);
       api.interceptors.response.eject(responseIntercept);
     };
-  }, [auth, setAuth]);
+  }, [accessToken, setAuth]);
 
   return api; // Return the configured axios instance
 };

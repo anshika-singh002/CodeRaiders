@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from './components/Login.jsx';
 import Dashboard from './components/Dashboard.jsx';
@@ -13,6 +13,8 @@ import EditProblem from './components/EditProblem.jsx';
 import Navbar from './components/Navbar.jsx';
 import UserProfile from './components/UserProfile.jsx';
 import Contests from './components/Contests.jsx';
+import ContestDetail from './components/ContestDetail.jsx';
+import CreateContest from './components/CreateContest.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminRoute from './components/AdminRoute.jsx';
 import './App.css';
@@ -29,6 +31,9 @@ function App() {
             {showNavbar && <Navbar />}
 
             <Routes>
+                {/* Redirect root to dashboard */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
                 {/* Public routes */}
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
@@ -40,6 +45,7 @@ function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/problems/:problemId/submit" element={<SubmitCode />} />
                     <Route path="/contests" element={<Contests />} />
+                    <Route path="/contests/:id" element={<ContestDetail />} />
                     <Route path="/submissions" element={<Submissions />} />
                     <Route path="/userprofile" element={<UserProfile />} />
                     {/* ❌ The duplicate /problems route has been removed for clarity */}
@@ -51,6 +57,7 @@ function App() {
                     <Route path="/problems/new" element={<CreateProblem />} />
                     <Route path="/admin/problems/edit/:id" element={<EditProblem />} />
                     <Route path="/problems/edit/:id" element={<EditProblem />} />
+                    <Route path="/contests/new" element={<CreateContest />} />
                 </Route>
             </Routes>
         </>

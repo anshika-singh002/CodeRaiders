@@ -1,9 +1,5 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 ;
-  text-align: center;
-}
+/* Removed boilerplate #root styling to allow pages to take full width and default alignment */
+
 
 .logo {
   height: 6em;

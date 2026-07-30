@@ -5,7 +5,24 @@ import api from '../api/axios';
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState({}); // Will hold user info and accessToken
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  const [auth, setAuth] = useState(
+    storedUser?.token
+      ? {
+          user: {
+            id: storedUser.id,
+            firstname: storedUser.firstname,
+            email: storedUser.email,
+            role: storedUser.role,
+          },
+          accessToken: storedUser.token,
+        }
+      : {}
+  );
+
+  if (storedUser?.token && !api.defaults.headers.common['Authorization']) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${storedUser.token}`;
+  }
 
   const login = async (email, password) => {
     const response = await api.post('/login', { email, password });
