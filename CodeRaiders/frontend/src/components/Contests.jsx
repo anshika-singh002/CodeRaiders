@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, Clock, Plus, Users } from 'lucide-react';
 import useAxiosPrivate from '../hooks/useAxiosPrivate';
 
-import useAuth from '../hooks/useAuth';
-
+import { useAuth } from "../context/AuthContext";
 const getStatusColor = (status) => {
     switch (status) {
         case 'Live':
